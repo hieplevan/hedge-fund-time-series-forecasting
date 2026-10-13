@@ -1,0 +1,78 @@
+# ==============================================================================
+# Hedge Fund Time-Series Forecasting Configuration
+# ==============================================================================
+
+project:
+  name: "hedge-fund-time-series-forecasting"
+  description: "Multi-Horizon Financial Time Series Alpha Forecasting with LightGBM & Dynamic Embargo"
+  authors:
+    - "Le Van Hiep"
+    - "Nguyen Duy Hieu"
+    - "Vu Minh Hieu"
+    - "Tran Trung Hieu"
+  version: "1.0.0"
+
+data:
+  train_path: "data/raw/train.parquet"
+  test_path: "data/raw/test.parquet"
+  submission_path: "submission.csv"
+  candidate_dirs:
+    - "/kaggle/input/competitions/ts-forecasting"
+    - "/kaggle/input/ts-forecasting"
+    - "data/raw"
+    - "."
+
+columns:
+  id: "id"
+  code: "code"
+  sub_code: "sub_code"
+  sub_category: "sub_category"
+  target: "y_target"
+  weight: "weight"
+  ts_index: "ts_index"
+  horizon: "horizon"
+
+split:
+  val_threshold: 3500
+  history_tail: 50
+  # Dynamic Embargo buffers per horizon to eliminate target overlap leakage
+  embargo_delta:
+    1: 26    # val_threshold - (1 + 25)
+    3: 25    # val_threshold - 25
+    10: 35   # val_threshold - (10 + 25)
+    25: 0    # val_threshold
+
+model:
+  horizons: [1, 3, 10, 25]
+  seeds: [42, 2024, 12345, 99, 420]
+  early_stopping_rounds: 100
+  lgb_params:
+    objective: "regression"
+    metric: "rmse"
+    learning_rate: 0.005
+    n_estimators: 6000
+    num_leaves: 1024
+    max_depth: 14
+    min_child_samples: 400
+    feature_fraction: 0.6
+    bagging_fraction: 0.8
+    bagging_freq: 1
+    lambda_l1: 0.1
+    lambda_l2: 10.0
+    verbosity: -1
+    n_jobs: -1
+
+features:
+  top_features:
+    - "feature_al"
+    - "feature_am"
+    - "feature_cg"
+    - "feature_by"
+    - "feature_s"
+  lags: [1, 3, 5, 10, 25]
+  ema_spans: [3, 10, 25]
+  slope_window: 10
+
+diagnostics:
+  zero_tolerance: 1.0e-12
+  zero_rate_threshold: 0.60
